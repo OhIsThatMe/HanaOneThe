@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원더카드 2.0 혜택 설계 계산기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap');
+:root{
+  --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--border:#2a2a35;
+  --accent1:#7b5ea7;--accent2:#e05c8a;--accent3:#4fc3f7;--accent4:#f0a050;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a70;
+  --good:#4caf88;--warn:#f0a050;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a0a2e 0%,#0d1a2e 50%,#1a0d20 100%);padding:24px 20px 20px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 80% 50%,rgba(123,94,167,0.18) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 20% 80%,rgba(224,92,138,0.12) 0%,transparent 60%)}
+.header-inner{position:relative;max-width:960px;margin:0 auto}
+.header h1{font-size:19px;font-weight:900;letter-spacing:-0.5px;background:linear-gradient(135deg,#c9a0f0 0%,#e05c8a 60%,#4fc3f7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text2);font-size:11px;margin-top:3px}
+.main{max-width:960px;margin:0 auto;padding:16px 14px 40px}
+.section{margin-bottom:16px}
+.section-title{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+/* TYPE */
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.type-card{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:11px 9px;cursor:pointer;transition:all 0.2s;text-align:center}
+.type-card:hover{border-color:var(--accent1)}.type-card.active{border-color:var(--accent1);background:rgba(123,94,167,0.1)}
+.type-name{font-weight:700;font-size:13px}
+.type-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:3px 0 4px}
+.badge-free{background:rgba(79,195,247,0.15);color:var(--accent3)}.badge-mixed{background:rgba(123,94,167,0.15);color:#c9a0f0}.badge-special{background:rgba(224,92,138,0.15);color:var(--accent2)}
+.type-desc{font-size:10px;color:var(--text2)}
+/* PERF */
+.perf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.perf-card{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:9px;cursor:pointer;text-align:center;transition:all 0.2s}
+.perf-card:hover,.perf-card.active{border-color:var(--accent3)}.perf-card.active{background:rgba(79,195,247,0.07)}
+.perf-name{font-size:12px;font-weight:600}.perf-sub{font-size:10px;color:var(--text2);margin-top:1px}
+/* CREDIT BARS */
+.credit-bars{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.credit-bars{grid-template-columns:1fr}}
+.credit-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.credit-bar-wrap.plus-wrap{border-color:rgba(240,160,80,0.3)}
+.cb-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cb-label .lbl{font-size:11px;color:var(--text2)}.cb-label .lbl.plus-lbl{color:var(--accent4)}
+.credit-nums{font-family:'Space Mono',monospace;font-size:12px}
+.credit-nums .used{font-weight:700}
+.used-base{color:var(--accent2)}.used-plus{color:var(--accent4)}.used-full{color:var(--good)}.used-over{color:#e05c5c}.total-cr{color:var(--text3)}
+.bar-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.3s}
+.bar-base{background:linear-gradient(90deg,var(--accent1),var(--accent2))}.bar-plus{background:linear-gradient(90deg,#c07020,var(--accent4))}
+.bar-over{background:#e05c5c!important}.bar-full{background:var(--good)!important}
+/* PLUS TOGGLE */
+.plus-toggle-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid rgba(240,160,80,0.25);border-radius:8px;padding:10px 13px;cursor:pointer;transition:all 0.2s}
+.plus-toggle-row:hover{border-color:var(--accent4)}.plus-toggle-row.active{background:rgba(240,160,80,0.06);border-color:var(--accent4)}
+.toggle-switch{width:34px;height:18px;background:var(--border);border-radius:9px;position:relative;transition:all 0.2s;flex-shrink:0}
+.toggle-switch.on{background:var(--accent4)}.toggle-knob{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:all 0.2s}
+.toggle-switch.on .toggle-knob{left:18px}
+.toggle-title{font-size:12px;font-weight:700;color:var(--accent4)}.toggle-desc{font-size:10px;color:var(--text3)}
+/* BENEFIT PANELS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.benefit-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px}
+.benefit-panel.plus-panel{border-color:rgba(240,160,80,0.2)}
+.panel-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text3);margin-bottom:10px}
+.panel-title.plus-title{color:var(--accent4)}
+.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+@media(min-width:500px){.benefit-grid{grid-template-columns:repeat(3,1fr)}}
+/* BENEFIT ITEMS with slider */
+.benefit-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 8px 6px;cursor:pointer;transition:all 0.15s;position:relative}
+.benefit-item:hover{border-color:var(--accent1);z-index:10}
+.benefit-item.selected{border-color:var(--accent1);background:rgba(123,94,167,0.1)}
+.benefit-item.plus-item:hover{border-color:var(--accent4)}.benefit-item.plus-item.selected{border-color:var(--accent4);background:rgba(240,160,80,0.07)}
+/* TOOLTIP */
+.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:200px;max-width:260px;z-index:100;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+.benefit-item:hover .tooltip{display:block}
+.tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a1a24}
+.tooltip-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:5px}
+.tooltip-stores{font-size:10px;color:var(--text2);line-height:1.7}
+.tooltip-stores .store-tag{display:inline-block;background:rgba(123,94,167,0.15);color:#c9a0f0;border-radius:3px;padding:1px 5px;margin:1px 2px 1px 0;font-size:9px}
+.tooltip-note{font-size:9px;color:var(--text3);margin-top:6px;line-height:1.6;border-top:1px solid var(--border);padding-top:5px}
+.benefit-header{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
+.benefit-name{font-size:10px;font-weight:600;flex:1;line-height:1.4}
+.benefit-credit{font-family:'Space Mono',monospace;font-size:9px;background:var(--bg);color:var(--text3);border-radius:3px;padding:1px 4px;white-space:nowrap;flex-shrink:0}
+.benefit-item.selected .benefit-credit{background:rgba(224,92,138,0.2);color:var(--accent2)}
+.benefit-item.plus-item.selected .benefit-credit{background:rgba(240,160,80,0.2);color:var(--accent4)}
+/* ± 버튼 컨트롤 */
+.stepper-wrap{margin-top:6px}
+.stepper-row{display:flex;align-items:center;gap:4px}
+.step-btn{width:20px;height:20px;background:var(--border);border:none;color:var(--text);border-radius:4px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;line-height:1}
+.step-btn:hover:not(:disabled){background:var(--accent1);color:#fff}
+.plus-item .step-btn:hover:not(:disabled){background:var(--accent4)}
+.step-btn:disabled{opacity:0.3;cursor:not-allowed}
+.pct-label{font-family:'Space Mono',monospace;font-size:11px;color:#c9a0f0;font-weight:700;min-width:32px;text-align:center}
+.plus-item .pct-label{color:var(--accent4)}
+.pct-max{font-size:9px;color:var(--text3);margin-left:auto}
+.benefit-limit{font-size:9px;color:var(--text3);margin-top:3px}
+.benefit-limit.highlight{color:var(--good)}
+/* SPEND TABLE */
+.spend-table{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.spend-table-header{display:grid;grid-template-columns:1fr 150px 90px;gap:0;background:var(--surface2);padding:7px 12px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.spend-row{display:grid;grid-template-columns:1fr 150px 90px;align-items:center;gap:0;padding:6px 12px;border-top:1px solid var(--border);transition:background 0.15s}
+.spend-row:hover{background:rgba(255,255,255,0.02)}.spend-row.plus-row{background:rgba(240,160,80,0.03)}.spend-row.plus-row:hover{background:rgba(240,160,80,0.06)}
+.spend-name{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.spend-name .pct-badge{font-family:'Space Mono',monospace;font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(123,94,167,0.15);color:#c9a0f0}
+.spend-name .pct-badge.plus-badge{background:rgba(240,160,80,0.15);color:var(--accent4)}
+.spend-input-wrap{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+.spend-input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-family:'Space Mono',monospace;font-weight:600;width:100px;padding:4px 8px;text-align:right;outline:none;transition:border-color 0.15s}
+.spend-input:focus{border-color:var(--accent1)}.plus-row .spend-input:focus{border-color:var(--accent4)}
+.spend-unit{font-size:10px;color:var(--text3);flex-shrink:0}
+.spend-benefit{font-family:'Space Mono',monospace;font-size:11px;color:var(--good);text-align:right}
+.spend-benefit.zero{color:var(--text3)}.spend-benefit.plus-b{color:var(--accent4)}
+.spend-row.zero-row{opacity:0.6}
+/* RESULT */
+.result-split{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+@media(max-width:560px){.result-split{grid-template-columns:1fr}}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 13px}
+.result-card.plus-card{border-color:rgba(240,160,80,0.2);opacity:0.4;transition:opacity 0.2s}.result-card.plus-card.active{opacity:1;border-color:rgba(240,160,80,0.4)}
+.result-card.total-card{background:rgba(123,94,167,0.07);border-color:rgba(123,94,167,0.25)}
+.rc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rc-label{font-size:10px;font-weight:700;color:var(--text2);letter-spacing:0.5px}.rc-label.plus-lbl{color:var(--accent4)}
+.rc-fee{font-size:9px;color:var(--text3);background:var(--surface2);padding:2px 6px;border-radius:3px}
+.rc-value{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--good);margin-bottom:8px}
+.rc-value.plus-val{color:var(--accent4)}.rc-value.total-val{color:#c9a0f0}.rc-value.inactive{color:var(--text3);font-size:14px}
+.rc-divider{height:1px;background:var(--border);margin:6px 0}
+.rc-sub-row{display:flex;justify-content:space-between;align-items:center;margin:3px 0}
+.rc-sub-label{font-size:10px;color:var(--text3)}.rc-sub-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3)}
+.rc-net{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--good)}
+.rc-net.neg{color:var(--warn)}.rc-net.plus-net{color:var(--accent4)}.rc-net.plus-net.neg{color:var(--warn)}.rc-net.total-net{color:#c9a0f0}.rc-net.total-net.neg{color:var(--warn)}.rc-net.inactive{color:var(--text3);font-weight:400}
+.result-box{background:linear-gradient(135deg,rgba(123,94,167,0.12) 0%,rgba(224,92,138,0.08) 100%);border:1px solid rgba(123,94,167,0.35);border-radius:12px;padding:14px}
+.result-title{font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.result-detail{border-top:1px solid var(--border);padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:560px){.result-detail{grid-template-columns:1fr}}
+.result-col-title{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px;grid-column:1/-1}
+.result-col-title.plus-ct{color:rgba(240,160,80,0.6)}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(42,42,53,0.4);font-size:11px}
+.result-row:last-child{border-bottom:none}
+.rname{color:var(--text2)}.rval{font-family:'Space Mono',monospace}.rval.good{color:var(--good)}.rval.plus-val{color:var(--accent4)}
+.msg-box{border-radius:8px;padding:9px 12px;font-size:11px;margin-top:8px}
+.msg-warn{background:rgba(240,160,80,0.08);border:1px solid rgba(240,160,80,0.25);color:var(--warn)}
+.msg-ok{background:rgba(76,175,136,0.08);border:1px solid rgba(76,175,136,0.25);color:var(--good)}
+.msg-note{background:var(--surface2);border:none;color:var(--text3);line-height:1.8;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-inner">
+    <h1>원더카드 2.0 혜택 설계 계산기</h1>
+    <p>상품설명서(2025.06) 기준 · 슬라이더로 할인율 조절 · hover 시 가맹점 확인</p>
+  </div>
+</div>
+<div class="main">
+  <div class="section">
+    <div class="section-title">STEP 1 &nbsp;상품 유형</div>
+    <div class="type-grid">
+      <div class="type-card active" onclick="setType('free')" id="type-free"><div class="type-name">범용형</div><div class="type-badge badge-free">무실적</div><div class="type-desc">실적조건 없음<br>통합한도 5만원<br>최대 5% · 전가맹점 포함</div></div>
+      <div class="type-card" onclick="setType('mixed')" id="type-mixed"><div class="type-name">혼합형</div><div class="type-badge badge-mixed">실적 필요</div><div class="type-desc">전월 40만원↑<br>영역별 한도 · 최대 50%<br>전가맹점 <b style="color:#c9a0f0">필수</b> · 최솟값 0.1%</div></div>
+      <div class="type-card" onclick="setType('special')" id="type-special"><div class="type-name">특화형</div><div class="type-badge badge-special">실적 필요</div><div class="type-desc">전월 40만원↑<br>영역별 한도 · 최대 50%<br>전가맹점 <b style="color:var(--accent2)">제외가능</b> · 최솟값 5%</div></div>
+    </div>
+  </div>
+  <div class="section" id="perf-section" style="display:none">
+    <div class="section-title">STEP 2 &nbsp;전월 실적 구간</div>
+    <div class="perf-grid">
+      <div class="perf-card active" onclick="setPerf('low')" id="perf-low"><div class="perf-name">40~80만원</div><div class="perf-sub">기본 한도</div></div>
+      <div class="perf-card" onclick="setPerf('mid')" id="perf-mid"><div class="perf-name">80~120만원</div><div class="perf-sub">중간 한도</div></div>
+      <div class="perf-card" onclick="setPerf('high')" id="perf-high"><div class="perf-name">120만원 이상</div><div class="perf-sub">최대 한도</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">혜택플러스 (+7,900원/년)</div>
+    <div class="plus-toggle-row" id="plus-toggle" onclick="togglePlus()">
+      <div class="toggle-switch" id="plus-switch"><div class="toggle-knob"></div></div>
+      <div><div class="toggle-title">혜택플러스 활성화</div><div class="toggle-desc">별도 원더크레딧 100코인 · 실적 40만원↑ 조건 · 연회비 7,900원 추가</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">원더크레딧 현황</div>
+    <div class="credit-bars">
+      <div class="credit-bar-wrap">
+        <div class="cb-label"><span class="lbl">기본서비스</span><span class="credit-nums"><span class="used used-base" id="cr-base">0</span><span class="total-cr"> / 100</span></span></div>
+        <div class="bar-bg"><div class="bar-fill bar-base" id="bar-base" style="width:0%"></div></div>
+      </div>
+      <div class="credit-bar-wrap plus-wrap" id="plus-bar-wrap" style="opacity:0.35">
+        <div class="cb-label"><span class="lbl plus-lbl">혜택플러스</span><span class="credit-nums"><span class="used used-plus" id="cr-plus">0</span><span class="total-cr"> / 100</span></span></div>
+        <div class="bar-bg"><div class="bar-fill bar-plus" id="bar-plus" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">STEP 3 &nbsp;서비스 영역 <span style="font-size:9px;color:var(--text3);margin-left:4px;font-weight:400;letter-spacing:0">클릭 활성 · 슬라이더로 할인율 조절 · hover 시 가맹점 확인</span></div>
+    <div class="two-col">
+      <div class="benefit-panel"><div class="panel-title">기본서비스</div><div class="benefit-grid" id="grid-base"></div></div>
+      <div class="benefit-panel plus-panel" id="plus-panel" style="opacity:0.35;pointer-events:none"><div class="panel-title plus-title">혜택플러스 <span style="font-size:9px;font-weight:400;color:var(--text3)">(별도 크레딧)</span></div><div class="benefit-grid" id="grid-plus"></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">STEP 4 &nbsp;영역별 월 소비액 <span style="font-size:9px;color:var(--text3);margin-left:4px;font-weight:400;letter-spacing:0">선택 여부와 무관하게 모든 영역 입력 가능 · 유형 변경 후에도 유지</span></div>
+    <div class="spend-table">
+      <div class="spend-table-header"><span>서비스 영역</span><span style="text-align:right">월 소비액</span><span style="text-align:right">예상 혜택</span></div>
+      <div id="spend-rows"><div style="padding:16px;text-align:center;color:var(--text3);font-size:11px">STEP 3에서 서비스 영역을 선택하면 여기에 표시됩니다</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">결과 요약</div>
+    <div class="result-box">
+      <div class="result-title">월 예상 혜택</div>
+      <div class="result-split">
+        <div class="result-card base-card">
+          <div class="rc-header"><span class="rc-label">기본서비스</span><span class="rc-fee">연회비 12,000원</span></div>
+          <div class="rc-value" id="res-base">0원</div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 연회비</span><span class="rc-sub-val">−1,000원</span></div>
+          <div class="rc-divider"></div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 순혜택</span><span class="rc-net" id="res-base-roi">0원</span></div>
+        </div>
+        <div class="result-card plus-card" id="plus-card">
+          <div class="rc-header"><span class="rc-label plus-lbl">혜택플러스</span><span class="rc-fee">연회비 7,900원</span></div>
+          <div class="rc-value plus-val" id="res-plus">-</div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 연회비</span><span class="rc-sub-val" id="plus-fee-monthly">−658원</span></div>
+          <div class="rc-divider"></div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 순혜택</span><span class="rc-net plus-net" id="res-plus-roi">-</span></div>
+        </div>
+        <div class="result-card total-card">
+          <div class="rc-header"><span class="rc-label">합계</span><span class="rc-fee" id="total-fee-label">연회비 12,000원</span></div>
+          <div class="rc-value total-val" id="res-total">0원</div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 연회비</span><span class="rc-sub-val" id="total-fee-monthly">−1,000원</span></div>
+          <div class="rc-divider"></div>
+          <div class="rc-sub-row"><span class="rc-sub-label">월 순혜택</span><span class="rc-net total-net" id="res-roi">0원</span></div>
+        </div>
+      </div>
+      <div class="result-detail" id="result-detail"></div>
+    </div>
+    <div id="msg-base" class="msg-box msg-warn" style="display:none"></div>
+    <div id="msg-plus" class="msg-box msg-warn" style="display:none"></div>
+    <div id="msg-note" class="msg-box msg-note" style="display:none"></div>
+  </div>
+</div>
+<script>
+// ===== STORES =====
+const STORES={global:{stores:['국내외 전 가맹점'],note:'서비스 제외 대상(국세·지방세·공과금·상품권·수도요금·등록금 등) 제외한 전체'},easy:{stores:['하나페이(모든결제)','삼성페이(온라인)','네이버페이(온라인)','카카오페이(온라인)','SSG페이','페이코','쿠페이','11pay(온라인)'],note:'오프라인 삼성페이·네이버페이 결제는 제외'},food_d:{stores:['한식','중식','일식','서양식','패스트푸드점','간이음식점','치킨전문점','뷔페·출장연회'],note:'06:00~17:00 오프라인 결제만. 배달앱·예약앱 주문결제 제외'},food_n:{stores:['한식','중식','일식','서양식','패스트푸드점','간이음식점','치킨전문점','뷔페·출장연회'],note:'17:00~24:00 오프라인 결제만. 배달앱·예약앱 주문결제 제외'},delivery:{stores:['배달의민족','요기요','쿠팡이츠'],note:'공식 앱/홈페이지 결제만. 음식점 직접결제 제외'},hanapay:{stores:['하나페이 앱 내 원더카드 맛집 가맹점'],note:'하나페이 앱 > 맛집서비스 > 원더카드 맛집 참고. 오프라인 결제만'},fastfood:{stores:['롯데리아','맥도날드','버거킹','KFC','쉐이크쉑','써브웨이','맘스터치'],note:'오프라인만. 대형시설물 입점·임대매장 제외'},bakery:{stores:['파리바게트','뚜레쥬르','아티제','파리크라상','카페노티드','던킨도너츠'],note:'오프라인만. 대형시설물 입점·임대매장 제외'},coffee:{stores:['스타벅스','커피빈','이디야','폴바셋','투썸플레이스','블루보틀'],note:'대형시설물 입점·임대매장 제외. 배달앱 제외'},coupang:{stores:['쿠팡'],note:'공식 앱/홈페이지만. 상품권·여행·항공권·티켓·도서·공연 제외'},naver:{stores:['네이버쇼핑'],note:'네이버쇼핑 공식 결제 건'},open:{stores:['G마켓','옥션','11번가','인터파크','위메프','티몬'],note:'공식 앱/홈페이지 결제만'},ofood:{stores:['컬리','SSG.COM','롯데ON','더현대닷컴'],note:'공식 앱/홈페이지만. 계열사 이동 결제 제외'},sseg:{stores:['전국 신세계백화점'],note:'오프라인만. 상설·임대매장 및 상품권 제외'},lotte_d:{stores:['전국 롯데백화점'],note:'오프라인만. 상설·임대매장 및 상품권 제외'},hyun_d:{stores:['전국 현대백화점','더현대'],note:'오프라인만. 상설·임대매장 및 상품권 제외'},mart:{stores:['이마트','트레이더스 홀세일 클럽','홈플러스','롯데마트'],note:'오프라인만. 창고형·상설·임대매장 제외'},homeshop:{stores:['GS SHOP','롯데홈쇼핑','현대홈쇼핑','CJ온스타일','NS홈쇼핑','홈앤쇼핑','공영쇼핑'],note:'공식 앱/홈페이지 및 TV홈쇼핑만'},super:{stores:['GS THE FRESH','롯데슈퍼','이마트에브리데이','홈플러스익스프레스','노브랜드'],note:'오프라인만'},outlet:{stores:['신세계사이먼','현대프리미엄','롯데프리미엄'],note:''},luxury:{stores:['머스트잇','발란','트랜비'],note:''},fashion:{stores:['무신사','지그재그','W컨셉','29cm'],note:''},spa:{stores:['ZARA','유니클로','H&M','탑텐'],note:'오프라인만. 대형시설물 입점·임대매장 제외'},cvs:{stores:['CU','GS25','세븐일레븐','이마트24'],note:'오프라인만. 대형시설물 입점·임대매장 제외'},transit:{stores:['버스','지하철'],note:'시외버스·고속버스·KTX/SRT 제외'},medical:{stores:['종합병원','일반병원','한방병원','치과','내과','신경정신과','외과','성형외과','산부인과','안과','이비인후과','피부과','소아과','정형외과','한의원','약국'],note:'오프라인만. 온라인·미리결제 제외'},school:{stores:['입시·보습학원','외국어학원','예체능학원','방문/온라인교육','무술도장','자동차운전학원','기술·직업훈련학원','교육교구'],note:''},living:{stores:['아파트관리비','전기세(가정용)','가스비(가정용)'],note:'하나카드 자동납부 등록 가맹점만'},skt:{stores:['SK텔레콤','SK브로드밴드','T우주 자동납부요금'],note:'자동납부만. 알뜰폰·자동이체 미납 제외'},kt:{stores:['KT 자동납부 요금'],note:'자동납부만'},lgu:{stores:['LGU+ 자동납부 요금'],note:'자동납부만'},tmem:{stores:['T멤버십 바코드 이용 11pay 오프라인 결제'],note:'T멤버십 앱 바코드 카드 등록 후 결제'},drug:{stores:['올리브영','다이소'],note:'다이소는 오프라인만. 대형시설물 입점·임대매장 제외'},laundry:{stores:['세탁특공대(앱)','크린토피아(앱+오프라인)','세탁업종(오프라인)'],note:''},interior:{stores:['이케아(오프라인)','현대리바트(오프라인)','한샘몰(온라인)','오늘의집(온라인)'],note:''},rental:{stores:['렌탈 가맹점'],note:'하나카드 홈페이지 참고. 자동이체만. 일반구매·대리점 제외'},beauty:{stores:['미용업종','동물병원업종'],note:'오프라인만. 대형시설물·임대매장·네이버예약·카카오헤어 등 제외'},skoil:{stores:['SK에너지(오프라인 주유)','11번가(온라인)'],note:'SK에너지는 주유소 오프라인만'},taxi:{stores:['카카오T(앱 미리결제)','UT(앱 미리결제)','택시업종(오프라인)'],note:'카카오T·UT는 미리결제만. 현장·나중결제 제외'},oil:{stores:['SK에너지','GS칼텍스','S-Oil','HD현대오일뱅크','알뜰주유소'],note:'오프라인 주유만'},ev:{stores:['EV(전기차)충전','수소충전 가맹점'],note:'하나카드 홈페이지 가맹점 참고. 멤버십 가입 후 등록 이용 또는 현장결제'},car:{stores:['스피드메이트(오프라인)','오토오아시스(오프라인)','아이파킹(앱)'],note:''},carshare:{stores:['쏘카','그린카'],note:'공식 앱/홈페이지만'},gym:{stores:['헬스업종'],note:'오프라인만. 공립 스포츠센터·수영장 제외'},billiard:{stores:['당구업종'],note:'오프라인만. 온라인 예약·결제 제외'},webtoon:{stores:['네이버웹툰','밀리의서재','카카오페이지'],note:'공식 앱/홈페이지 온라인만'},movie:{stores:['CGV','롯데시네마'],note:'공식 앱/홈페이지 및 오프라인. 구매대행·쇼핑몰 관람권 제외'},golf:{stores:['골프업종(오프라인)','골프연습장·스크린골프(오프라인)','카카오골프'],note:'골프업종·연습장은 오프라인만'},hotel:{stores:['야놀자(NOL)','여기어때'],note:'공식 앱/홈페이지만. 직접결제 제외'},dutyfree:{stores:['신세계면세점','현대면세점','롯데면세점','신라면세점'],note:'면세점 매장 및 공식 앱/홈페이지'},air:{stores:['대한항공','아시아나','제주항공','진에어','에어서울','에어부산'],note:'공식 앱/홈페이지 및 오프라인. 여행사·구매대행·오픈마켓 제외. 국제선은 국내출발+원화결제만'},train:{stores:['KTX','SRT','시외버스','고속버스'],note:'공식 앱/홈페이지 및 오프라인. 여행사·구매대행 제외'},overseas:{stores:['해외 가맹점'],note:'해외결제 수수료 발생 가능. 신용결제 설정 시에만 원더서비스 제공'},dmem:{stores:['쿠팡로켓와우','네이버플러스멤버십','컬리멤버스'],note:'월 정기결제만 매월 서비스. 포인트·캐시충전·개별결제·간편결제·인앱결제 제외'},stream:{stores:['넷플릭스','디즈니 플러스','Wavve','유튜브 프리미엄'],note:'월 정기결제만 매월 서비스. 포인트·캐시충전·간편결제·인앱결제 제외'},music:{stores:['멜론','지니','FLO','스포티파이'],note:'월 정기결제만'},install:{stores:['국내 가맹점 2~3개월 무이자 할부'],note:'5만원 이상 결제건. 무이자할부 금액은 실적 포함되나 할인/적립 제외'}};
+
+// ===== DATASETS =====
+const FREE_DATA=[{id:'global',name:'국내외 가맹점',cr:6,unit:0.1,min:0.1,max:1.0,lim:'ul',auto:true},{id:'easy',name:'간편결제',cr:2,unit:0.1,min:0.1,max:1.2,lim:'ul',auto:true},{id:'food_d',name:'음식점 Day',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'food_n',name:'음식점 Night',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'delivery',name:'딜리버리',cr:4,unit:1,min:0,max:3,lim:'5m'},{id:'hanapay',name:'하나페이 맛집',cr:2,unit:1,min:0,max:3,lim:'5m'},{id:'fastfood',name:'패스트푸드',cr:2,unit:1,min:0,max:4,lim:'5m'},{id:'bakery',name:'베이커리',cr:2,unit:1,min:0,max:4,lim:'5m'},{id:'coffee',name:'커피',cr:4,unit:1,min:0,max:4,lim:'5m'},{id:'coupang',name:'쿠팡',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'naver',name:'네이버쇼핑',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'open',name:'오픈마켓',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'ofood',name:'온라인식품&쇼핑',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'sseg',name:'신세계백화점',cr:2,unit:1,min:0,max:2,lim:'5m'},{id:'lotte_d',name:'롯데백화점',cr:2,unit:1,min:0,max:2,lim:'5m'},{id:'hyun_d',name:'현대백화점',cr:2,unit:1,min:0,max:2,lim:'5m'},{id:'mart',name:'마트',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'homeshop',name:'홈쇼핑',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'super',name:'슈퍼마켓',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'outlet',name:'아울렛',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'luxury',name:'온라인명품',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'fashion',name:'온라인패션',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'spa',name:'SPA브랜드',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'cvs',name:'편의점',cr:4,unit:1,min:0,max:3,lim:'5m'},{id:'transit',name:'대중교통',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'medical',name:'병원/약국',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'school',name:'학원',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'living',name:'생활요금',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'skt',name:'SKT 통신',cr:4,unit:1,min:0,max:3,lim:'5m'},{id:'kt',name:'KT 통신',cr:4,unit:1,min:0,max:3,lim:'5m'},{id:'lgu',name:'LGU+ 통신',cr:4,unit:1,min:0,max:3,lim:'5m'},{id:'tmem',name:'T멤버십 바코드',cr:4,unit:1,min:0,max:2,lim:'5m'},{id:'drug',name:'드럭스토어',cr:6,unit:1,min:0,max:3,lim:'5m'},{id:'laundry',name:'세탁',cr:2,unit:1,min:0,max:4,lim:'5m'},{id:'interior',name:'인테리어',cr:6,unit:1,min:0,max:3,lim:'5m'},{id:'rental',name:'렌탈',cr:4,unit:1,min:0,max:5,lim:'5m'},{id:'beauty',name:'뷰티&펫',cr:6,unit:1,min:0,max:4,lim:'5m'},{id:'skoil',name:'SK주유&쇼핑',cr:6,unit:1,min:0,max:3,lim:'5m'},{id:'taxi',name:'택시',cr:4,unit:1,min:0,max:5,lim:'5m'},{id:'oil',name:'주유/LPG충전',cr:6,unit:1,min:0,max:3,lim:'5m'},{id:'ev',name:'친환경 충전',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'car',name:'차량정비&주차',cr:2,unit:1,min:0,max:3,lim:'5m'},{id:'carshare',name:'카쉐어링',cr:2,unit:1,min:0,max:3,lim:'5m'},{id:'gym',name:'스포츠센터',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'billiard',name:'당구',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'webtoon',name:'웹툰/도서',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'movie',name:'영화',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'golf',name:'골프',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'hotel',name:'숙박',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'dutyfree',name:'면세점',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'air',name:'항공권',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'train',name:'철도/시외고속',cr:2,unit:1,min:0,max:3,lim:'5m'},{id:'overseas',name:'해외',cr:6,unit:1,min:0,max:2,lim:'5m'},{id:'dmem',name:'디지털 멤버십',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'stream',name:'영상 스트리밍',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'music',name:'뮤직',cr:2,unit:1,min:0,max:5,lim:'5m'},{id:'install',name:'무이자할부',cr:4,noRate:true}];
+const MIXED_DATA=[{id:'global',name:'국내외 가맹점',cr:10,unit:0.1,min:0.1,max:0.8,lim:'ul',auto:true,l40:null,l80:null,l120:null},{id:'easy',name:'간편결제',cr:15,unit:5,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'food_d',name:'음식점 Day',cr:20,unit:5,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'food_n',name:'음식점 Night',cr:20,unit:5,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'delivery',name:'딜리버리',cr:10,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'hanapay',name:'하나페이 맛집',cr:5,unit:5,min:0,max:30,l40:4000,l80:8000,l120:12000},{id:'fastfood',name:'패스트푸드',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'bakery',name:'베이커리',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'coffee',name:'커피',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'coupang',name:'쿠팡',cr:15,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'naver',name:'네이버쇼핑',cr:15,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'open',name:'오픈마켓',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'ofood',name:'온라인식품&쇼핑',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'sseg',name:'신세계백화점',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'lotte_d',name:'롯데백화점',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'hyun_d',name:'현대백화점',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'mart',name:'마트',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'homeshop',name:'홈쇼핑',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'super',name:'슈퍼마켓',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'outlet',name:'아울렛',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'luxury',name:'온라인명품',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'fashion',name:'온라인패션',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'spa',name:'SPA브랜드',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'cvs',name:'편의점',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'transit',name:'대중교통',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'medical',name:'병원/약국',cr:15,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'school',name:'학원',cr:15,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'living',name:'생활요금',cr:15,unit:5,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'skt',name:'SKT 통신',cr:10,unit:5,min:0,max:10,l40:8000,l80:12000,l120:15000},{id:'kt',name:'KT 통신',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'lgu',name:'LGU+ 통신',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'tmem',name:'T멤버십 바코드',cr:5,unit:5,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'drug',name:'드럭스토어',cr:10,unit:5,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'laundry',name:'세탁',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'interior',name:'인테리어',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'rental',name:'렌탈',cr:10,unit:5,min:0,max:30,l40:4000,l80:8000,l120:12000},{id:'beauty',name:'뷰티&펫',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'skoil',name:'SK주유&쇼핑',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'taxi',name:'택시',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'oil',name:'주유/LPG충전',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'ev',name:'친환경 충전',cr:5,unit:5,min:0,max:40,l40:4000,l80:8000,l120:12000},{id:'car',name:'차량정비&주차',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'carshare',name:'카쉐어링',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'gym',name:'스포츠센터',cr:5,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'billiard',name:'당구',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'webtoon',name:'웹툰/도서',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'movie',name:'영화',cr:5,unit:5,min:0,max:30,l40:8000,l80:12000,l120:15000},{id:'golf',name:'골프',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'hotel',name:'숙박',cr:10,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'dutyfree',name:'면세점',cr:10,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'air',name:'항공권',cr:10,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'train',name:'철도/시외고속',cr:5,unit:5,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'overseas',name:'해외',cr:10,unit:5,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'dmem',name:'디지털 멤버십',cr:5,unit:5,min:0,max:50,l40:8000,l80:12000,l120:15000},{id:'stream',name:'영상 스트리밍',cr:5,unit:5,min:0,max:50,l40:8000,l80:12000,l120:15000},{id:'music',name:'뮤직',cr:5,unit:5,min:0,max:50,l40:8000,l80:12000,l120:15000},{id:'install',name:'무이자할부',cr:5,noRate:true}];
+// SPECIAL_DATA: 특화형
+// p.4 개요: "서비스 영역별 5%~50%까지 선택 가능" → 선택 단위(unit)가 5%임을 의미
+// p.17 상세 표: 최소 선택 서비스 크기 = 0.0% (모든 영역 동일)
+// 혼합형과의 차이: ① 국내외 가맹점 서비스 제외(56개) ② 국내외 가맹점 필수 선택 없음
+// unit, min(0), max는 혼합형과 동일
+const SPECIAL_DATA=MIXED_DATA.filter(d=>d.id!=='global').map(d=>({...d,auto:false}));
+
+const PLUS_DATA=[{id:'p_easy',name:'간편결제',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_food_d',name:'음식점 Day',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_food_n',name:'음식점 Night',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_delivery',name:'딜리버리',cr:10,unit:1,min:0,max:10,l40:4000,l80:6000,l120:10000},{id:'p_hanapay',name:'하나페이 맛집',cr:5,unit:1,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'p_fastfood',name:'패스트푸드',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_bakery',name:'베이커리',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_coffee',name:'커피',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_coupang',name:'쿠팡',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_naver',name:'네이버쇼핑',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_open',name:'오픈마켓',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_ofood',name:'온라인식품&쇼핑',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_sseg',name:'신세계백화점',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_lotte_d',name:'롯데백화점',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_hyun_d',name:'현대백화점',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_mart',name:'마트',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_homeshop',name:'홈쇼핑',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_super',name:'슈퍼마켓',cr:20,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_outlet',name:'아울렛',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_luxury',name:'온라인명품',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_fashion',name:'온라인패션',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_spa',name:'SPA브랜드',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_cvs',name:'편의점',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_transit',name:'대중교통',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_medical',name:'병원/약국',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_school',name:'학원',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_living',name:'생활요금',cr:20,unit:1,min:0,max:5,l40:4000,l80:6000,l120:10000},{id:'p_skt',name:'SKT 통신',cr:5,unit:1,min:0,max:10,l40:8000,l80:12000,l120:15000},{id:'p_kt',name:'KT 통신',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_lgu',name:'LGU+ 통신',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_tmem',name:'T멤버십 바코드',cr:10,unit:1,min:0,max:5,l40:8000,l80:12000,l120:15000},{id:'p_drug',name:'드럭스토어',cr:5,unit:1,min:0,max:10,l40:8000,l80:12000,l120:15000},{id:'p_laundry',name:'세탁',cr:5,unit:1,min:0,max:10,l40:8000,l80:12000,l120:15000},{id:'p_interior',name:'인테리어',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_rental',name:'렌탈',cr:5,unit:1,min:0,max:20,l40:4000,l80:8000,l120:12000},{id:'p_beauty',name:'뷰티&펫',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_skoil',name:'SK주유&쇼핑',cr:20,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_taxi',name:'택시',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_oil',name:'주유/LPG충전',cr:20,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_ev',name:'친환경 충전',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_car',name:'차량정비&주차',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_carshare',name:'카쉐어링',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_gym',name:'스포츠센터',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_billiard',name:'당구',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_webtoon',name:'웹툰/도서',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_movie',name:'영화',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_golf',name:'골프',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_hotel',name:'숙박',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_dutyfree',name:'면세점',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_air',name:'항공권',cr:10,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_train',name:'철도/시외고속',cr:5,unit:1,min:0,max:10,l40:4000,l80:8000,l120:12000},{id:'p_overseas',name:'해외',cr:10,unit:1,min:0,max:5,l40:4000,l80:8000,l120:12000},{id:'p_dmem',name:'디지털 멤버십',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_stream',name:'영상 스트리밍',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_music',name:'뮤직',cr:5,unit:1,min:0,max:20,l40:8000,l80:12000,l120:15000},{id:'p_install',name:'무이자할부',cr:5,noRate:true}];
+
+// ===== DEFAULT SPEND =====
+// 모든 영역 기본 소비액 = 0 (사용자가 직접 입력)
+const DEFAULT_SPEND={};
+FREE_DATA.forEach(d=>{if(!d.noRate)DEFAULT_SPEND[d.id]=0;});
+
+function getSpend(id){const k=getBaseId(id);return spendMap[k]!==undefined?spendMap[k]:0;}
+
+// ===== STATE =====
+let S={type:'free',perf:'low',plusOn:false,base:{},plus:{}};
+// spendMap persists across type/perf changes — keyed by base id
+let spendMap={};
+
+function baseData(){
+  if(S.type==='free') return FREE_DATA;
+  if(S.type==='special') return SPECIAL_DATA;
+  return MIXED_DATA;
+}
+function getBaseId(id){return id.startsWith('p_')?id.slice(2):id;}
+function getSpend(id){const k=getBaseId(id);return spendMap[k]!==undefined?spendMap[k]:(DEFAULT_SPEND[k]||50000);}
+
+
+function initSel(){
+  S.base={};S.plus={};
+  baseData().forEach(d=>{S.base[d.id]={sel:!!d.auto,pct:d.noRate?null:(d.auto?d.min:0)};});
+  PLUS_DATA.forEach(d=>{S.plus[d.id]={sel:false,pct:d.noRate?null:0};});
+}
+
+// ===== LIMIT =====
+function getLimit(d){
+  if(d.lim==='ul') return null;
+  if(d.lim==='5m') return 50000;
+  const k={low:'l40',mid:'l80',high:'l120'}[S.perf];
+  return d[k]||null;
+}
+
+// ===== TOOLTIP =====
+function buildTooltip(id){
+  const key=getBaseId(id);
+  const info=STORES[key];
+  if(!info) return '';
+  const tags=info.stores.map(s=>`<span class="store-tag">${s}</span>`).join('');
+  const note=info.note?`<div class="tooltip-note">※ ${info.note}</div>`:'';
+  return `<div class="tooltip"><div class="tooltip-title">${id.startsWith('p_')?'혜택플러스 · ':''}</div><div class="tooltip-stores">${tags}</div>${note}</div>`;
+}
+
+// ===== CREDITS =====
+function calcCr(sel,dataset){
+  let u=0;
+  dataset.forEach(d=>{const s=sel[d.id];if(!s||!s.sel)return;u+=d.noRate?d.cr:Math.round(s.pct/d.unit)*d.cr;});
+  return u;
+}
+
+// ===== RENDER =====
+function setType(t){S.type=t;['free','mixed','special'].forEach(x=>document.getElementById('type-'+x).classList.toggle('active',x===t));document.getElementById('perf-section').style.display=t==='free'?'none':'block';initSel();renderAll();}
+function setPerf(p){S.perf=p;['low','mid','high'].forEach(x=>document.getElementById('perf-'+x).classList.toggle('active',x===p));renderAll();}
+function togglePlus(){
+  S.plusOn=!S.plusOn;
+  document.getElementById('plus-switch').classList.toggle('on',S.plusOn);
+  document.getElementById('plus-toggle').classList.toggle('active',S.plusOn);
+  document.getElementById('plus-panel').style.opacity=S.plusOn?'1':'0.35';
+  document.getElementById('plus-panel').style.pointerEvents=S.plusOn?'auto':'none';
+  document.getElementById('plus-bar-wrap').style.opacity=S.plusOn?'1':'0.35';
+  if(!S.plusOn)PLUS_DATA.forEach(d=>{S.plus[d.id]={sel:false,pct:d.noRate?null:0};});
+  renderAll();
+}
+
+function renderAll(){
+  renderGrid('grid-base',S.base,baseData(),false);
+  renderGrid('grid-plus',S.plus,PLUS_DATA,true);
+  updateBars();
+  renderSpendTable();
+  updateSummary();
+  updateMsgs();
+}
+
+function renderGrid(gridId,sel,dataset,isPlus){
+  const grid=document.getElementById(gridId);grid.innerHTML='';
+  dataset.forEach(d=>{
+    const s=sel[d.id];const selected=s&&s.sel;const pct=s?s.pct:0;
+    const usedCr=selected?(d.noRate?d.cr:Math.round(pct/d.unit)*d.cr):0;
+    const lim=getLimit(d);
+    let limTxt=d.noRate?'무이자할부':(lim===null?'한도없음':(lim>=50000?'통합한도 5만':lim.toLocaleString()+'원'));
+    const tip=buildTooltip(d.id);
+    const el=document.createElement('div');
+    el.className='benefit-item'+(selected?' selected':'')+(isPlus?' plus-item':'');
+    el.id='item-'+d.id;
+
+    if(d.noRate){
+      el.innerHTML=`<div class="benefit-header"><span class="benefit-name">${d.name}</span><span class="benefit-credit">${d.cr}cr</span></div><div class="benefit-limit">${limTxt}</div>${tip}`;
+      el.onclick=()=>tog(d.id,sel,dataset);
+    } else if(d.auto){
+      el.innerHTML=`<div class="benefit-header"><span class="benefit-name">${d.name}<span style="font-size:8px;color:var(--accent3);margin-left:3px">필수</span></span><span class="benefit-credit">${usedCr}cr</span></div>
+      <div class="stepper-wrap">
+        <div class="stepper-row">
+          <button class="step-btn" onclick="event.stopPropagation();onStep('${d.id}',${isPlus},-1)" ${pct<=d.min?'disabled':''}>−</button>
+          <span class="pct-label">${pct.toFixed(1)}%</span>
+          <button class="step-btn" onclick="event.stopPropagation();onStep('${d.id}',${isPlus},1)" ${pct>=d.max?'disabled':''}>+</button>
+          <span class="pct-max">최대 ${d.max}%</span>
+        </div>
+      </div>
+      <div class="benefit-limit highlight">${limTxt}</div>${tip}`;
+    } else {
+      const stepperHtml = selected
+        ? `<div class="stepper-wrap">
+          <div class="stepper-row">
+            <button class="step-btn" onclick="event.stopPropagation();onStep('${d.id}',${isPlus},-1)" ${pct<=0?'disabled':''}>−</button>
+            <span class="pct-label">${pct>0?pct.toFixed(1)+'%':'0%'}</span>
+            <button class="step-btn" onclick="event.stopPropagation();onStep('${d.id}',${isPlus},1)" ${pct>=d.max?'disabled':''}>+</button>
+            <span class="pct-max">최대 ${d.max}%</span>
+          </div>
+        </div>
+        <div class="benefit-limit">${limTxt}</div>`
+        : `<div class="benefit-limit" style="margin-top:4px">최대 ${d.max}% · ${limTxt}</div>`;
+      el.innerHTML=`<div class="benefit-header"><span class="benefit-name">${d.name}</span><span class="benefit-credit">${usedCr}cr</span></div>${stepperHtml}${tip}`;
+      el.onclick=(e)=>{if(e.target.tagName==='BUTTON')return;tog(d.id,sel,dataset);};
+    }
+    grid.appendChild(el);
+  });
+}
+
+function onStep(id,isPlus,dir){
+  const dataset=isPlus?PLUS_DATA:baseData();
+  const sel=isPlus?S.plus:S.base;
+  const d=dataset.find(x=>x.id===id);if(!d||d.noRate)return;
+  const s=sel[id];
+  const newPct=Math.round((s.pct+dir*d.unit)*10)/10;
+  if(newPct<0||newPct>d.max)return;
+  const delta=(Math.round(newPct/d.unit)-Math.round(s.pct/d.unit))*d.cr;
+  if(calcCr(sel,dataset)+delta>100)return;
+  s.pct=newPct;
+  // 라벨·크레딧만 갱신 (스크롤 방지)
+  const lbl=document.querySelector(`#item-${id} .pct-label`);
+  if(lbl)lbl.textContent=newPct.toFixed(1)+'%';
+  const crEl=document.querySelector(`#item-${id} .benefit-credit`);
+  if(crEl)crEl.textContent=(s.sel?Math.round(newPct/d.unit)*d.cr:0)+'cr';
+  // − 버튼 disabled 상태 갱신
+  const btns=document.querySelectorAll(`#item-${id} .step-btn`);
+  if(btns[0])btns[0].disabled=(newPct<=0&&!d.auto)||(d.auto&&newPct<=d.min);
+  if(btns[1])btns[1].disabled=newPct>=d.max;
+  updateBars();renderSpendTable();updateSummary();updateMsgs();
+}
+
+function tog(id,sel,dataset){
+  const d=dataset.find(x=>x.id===id);if(!d||d.auto)return;
+  const s=sel[id];
+  if(s.sel){s.sel=false;s.pct=d.noRate?null:0;}
+  else{s.sel=true;s.pct=d.noRate?null:0;}
+  renderAll();
+}
+
+function updateBars(){
+  setBar('cr-base','bar-base',calcCr(S.base,baseData()),'base');
+  setBar('cr-plus','bar-plus',calcCr(S.plus,PLUS_DATA),'plus');
+}
+function setBar(nId,bId,used,kind){
+  const n=document.getElementById(nId),b=document.getElementById(bId);
+  b.style.width=Math.min(used,100)+'%';
+  b.className='bar-fill '+(kind==='plus'?'bar-plus':'bar-base')+(used>100?' bar-over':used===100?' bar-full':'');
+  n.textContent=used;
+  n.className='used '+(used>100?'used-over':used===100?'used-full':(kind==='plus'?'used-plus':'used-base'));
+}
+
+// ===== SPEND TABLE =====
+function renderSpendTable(){
+  const container=document.getElementById('spend-rows');
+
+  // baseId 기준으로 병합 — pct가 0이어도 선택된 항목은 포함
+  const merged={};
+
+  baseData().forEach(d=>{
+    const s=S.base[d.id];
+    if(!s||!s.sel||d.noRate)return; // pct 0도 포함
+    const k=d.id;
+    if(!merged[k])merged[k]={baseId:k,name:d.name,basePct:0,plusPct:0};
+    merged[k].basePct=s.pct||0;
+  });
+
+  if(S.plusOn){
+    PLUS_DATA.forEach(d=>{
+      const s=S.plus[d.id];
+      if(!s||!s.sel||d.noRate)return;
+      const k=getBaseId(d.id);
+      if(!merged[k])merged[k]={baseId:k,name:d.name,basePct:0,plusPct:0};
+      merged[k].plusPct=s.pct||0;
+    });
+  }
+
+  const rows=Object.values(merged);
+  if(rows.length===0){
+    container.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:11px">STEP 3에서 서비스 영역을 선택하면 여기에 표시됩니다</div>';
+    return;
+  }
+
+  container.innerHTML=rows.map(row=>{
+    const spend=getSpend(row.baseId);
+    const totalPct=row.basePct+row.plusPct;
+    const benefit=calcMergedBenefit(row.baseId,row.basePct,row.plusPct,spend);
+    const isZero=totalPct===0;
+
+    // 할인율 뱃지
+    let badgeHtml='';
+    if(row.basePct>0&&row.plusPct>0){
+      badgeHtml=`<span class="pct-badge">${row.basePct.toFixed(1)}%</span><span style="font-size:9px;color:var(--text3)">+</span><span class="pct-badge plus-badge">${row.plusPct.toFixed(1)}%</span><span style="font-family:monospace;font-size:9px;color:var(--good);margin-left:2px">=${totalPct.toFixed(1)}%</span>`;
+    } else if(row.basePct>0){
+      badgeHtml=`<span class="pct-badge">${row.basePct.toFixed(1)}%</span>`;
+    } else if(row.plusPct>0){
+      badgeHtml=`<span class="pct-badge plus-badge">${row.plusPct.toFixed(1)}%</span>`;
+    } else {
+      badgeHtml=`<span style="font-size:9px;color:var(--text3);margin-left:2px">0% — + 버튼으로 설정하세요</span>`;
+    }
+
+    return `<div class="spend-row${isZero?' zero-row':''}">
+      <span class="spend-name">${row.name} ${badgeHtml}</span>
+      <span class="spend-input-wrap">
+        <input class="spend-input" type="number" min="0" step="1000" value="${spend}"
+          data-baseid="${row.baseId}" oninput="onSpendInput(this)">
+        <span class="spend-unit">원</span>
+      </span>
+      <span class="spend-benefit${isZero||benefit===0?' zero':''}" id="sbenefit-${row.baseId}">${(!isZero&&benefit>0)?benefit.toLocaleString()+'원':'—'}</span>
+    </div>`;
+  }).join('');
+}
+
+function onSpendInput(el){
+  const baseId=el.dataset.baseid;
+  spendMap[baseId]=parseInt(el.value)||0;
+
+  // 혜택 즉시 갱신
+  const basePct=(()=>{const d=baseData().find(x=>x.id===baseId);const s=S.base[baseId];return(d&&s&&s.sel&&s.pct)?s.pct:0;})();
+  const plusPct=(()=>{if(!S.plusOn)return 0;const d=PLUS_DATA.find(x=>x.id==='p_'+baseId);const s=S.plus['p_'+baseId];return(d&&s&&s.sel&&s.pct)?s.pct:0;})();
+  const benefit=calcMergedBenefit(baseId,basePct,plusPct,spendMap[baseId]);
+  const el2=document.getElementById('sbenefit-'+baseId);
+  if(el2){el2.textContent=benefit>0?benefit.toLocaleString()+'원':'0원';el2.className='spend-benefit'+(benefit===0?' zero':'');}
+  updateSummary();
+}
+
+// 기본 + 혜택플러스 합산 혜택 계산
+// 규칙 (상품설명서 p.6):
+//   범용형 + 혜택플러스  → 각각 별도 한도 (통합5만 + 혜택플러스 영역별 한도)
+//   혼합형/특화형 + 혜택플러스 → 기본서비스 영역별 한도를 기본+혜택플러스가 공유
+function calcMergedBenefit(baseId, basePct, plusPct, spend){
+  const isFree = S.type === 'free';
+  const baseD = baseData().find(x => x.id === baseId);
+  const plusD = S.plusOn ? PLUS_DATA.find(x => x.id === 'p_' + baseId) : null;
+
+  if(isFree){
+    // 범용형: 별도 한도
+    let total = 0;
+    if(basePct > 0 && baseD){
+      const lim = getLimit(baseD);
+      const calc = Math.floor(spend * basePct / 100);
+      total += lim === null ? calc : Math.min(calc, lim);
+    }
+    if(plusPct > 0 && plusD){
+      const lim = getLimit(plusD); // 혜택플러스 영역별 한도
+      const calc = Math.floor(spend * plusPct / 100);
+      total += lim === null ? calc : Math.min(calc, lim);
+    }
+    return total;
+  } else {
+    // 혼합형/특화형: 기본서비스 한도를 합산이 공유
+    const lim = baseD ? getLimit(baseD) : null; // 기본서비스 한도가 공유 한도
+    const totalPct = basePct + plusPct;
+    if(totalPct <= 0) return 0;
+    const calc = Math.floor(spend * totalPct / 100);
+    return lim === null ? calc : Math.min(calc, lim);
+  }
+}
+
+// calcBenefit: 기본서비스 또는 혜택플러스 단독 계산
+// 혼합형/특화형에서 혜택플러스와 합산 한도 적용은 calcBenefitMerged에서 처리
+function calcBenefit(sel, dataset){
+  let rows=[], unlimSum=0, limSum=0;
+  const isPlus = dataset === PLUS_DATA;
+  const isFree = S.type === 'free';
+
+  dataset.forEach(d=>{
+    const s=sel[d.id]; if(!s||!s.sel) return;
+    if(d.noRate){rows.push({name:d.name,benefit:null,pct:null,id:d.id}); return;}
+    const pct=s.pct; if(pct<=0) return;
+    const spend=getSpend(d.id);
+
+    let benefit;
+    if(!isPlus && !isFree && S.plusOn){
+      // 혼합형/특화형 + 혜택플러스 활성: 기본서비스 혜택은 공유한도 내에서만 계산
+      // (혜택플러스와 합산 계산은 calcBenefitMerged에서)
+      // 여기서는 기본만 단독으로 표시 (정보용)
+      const lim = getLimit(d);
+      const calc = Math.floor(spend * pct / 100);
+      benefit = lim===null ? calc : Math.min(calc, lim);
+    } else {
+      const lim = getLimit(d);
+      const calc = Math.floor(spend * pct / 100);
+      benefit = lim===null ? calc : Math.min(calc, lim);
+    }
+    if(getLimit(d)===null) unlimSum+=benefit; else limSum+=benefit;
+    rows.push({name:d.name,benefit,pct,id:d.id});
+  });
+  if(isFree && !isPlus) limSum=Math.min(limSum,50000);
+  return{total:unlimSum+limSum, rows};
+}
+
+// 혼합형/특화형 + 혜택플러스 활성 시: 같은 영역의 기본+혜택플러스를 공유 한도로 합산
+function calcBenefitMerged(){
+  if(S.type==='free' || !S.plusOn) return null; // 이 함수는 혼합/특화+혜택플러스 전용
+
+  let unlimSum=0, limSum=0, rows=[];
+  const allIds=new Set([
+    ...baseData().filter(d=>!d.noRate&&!d.auto).map(d=>d.id),
+    ...PLUS_DATA.filter(d=>!d.noRate).map(d=>getBaseId(d.id))
+  ]);
+
+  allIds.forEach(baseId=>{
+    const baseD=baseData().find(x=>x.id===baseId);
+    const plusD=PLUS_DATA.find(x=>x.id==='p_'+baseId);
+    const baseS=S.base[baseId];
+    const plusS=S.plus['p_'+baseId];
+
+    const basePct=(baseS&&baseS.sel&&!baseD?.noRate)?baseS.pct||0:0;
+    const plusPct=(plusS&&plusS.sel&&!plusD?.noRate)?plusS.pct||0:0;
+    if(basePct<=0&&plusPct<=0) return;
+
+    const spend=getSpend(baseId);
+    const lim=baseD?getLimit(baseD):null; // 공유 한도 = 기본서비스 한도
+    const totalPct=basePct+plusPct;
+    const calc=Math.floor(spend*totalPct/100);
+    const benefit=lim===null?calc:Math.min(calc,lim);
+    if(lim===null) unlimSum+=benefit; else limSum+=benefit;
+
+    const name=baseD?.name||plusD?.name||baseId;
+    rows.push({name, benefit, basePct, plusPct, totalPct, id:baseId});
+  });
+
+  // auto 항목 (혼합형 global)
+  baseData().filter(d=>d.auto&&!d.noRate).forEach(d=>{
+    const s=S.base[d.id]; if(!s||!s.sel||!s.pct) return;
+    const lim=getLimit(d);
+    const spend=getSpend(d.id);
+    const calc=Math.floor(spend*s.pct/100);
+    const benefit=lim===null?calc:Math.min(calc,lim);
+    if(lim===null) unlimSum+=benefit; else limSum+=benefit;
+    rows.push({name:d.name,benefit,basePct:s.pct,plusPct:0,totalPct:s.pct,id:d.id});
+  });
+
+  return{total:unlimSum+limSum, rows};
+}
+
+// ===== SUMMARY =====
+function updateSummary(){
+  const isMixedPlus = S.type !== 'free' && S.plusOn;
+  const merged = isMixedPlus ? calcBenefitMerged() : null;
+
+  // 기본서비스 혜택 (범용형 or 혜택플러스 비활성 시)
+  const rb = calcBenefit(S.base, baseData());
+  // 혜택플러스 혜택 (범용형일 때만 별도 계산)
+  const rp = (!isMixedPlus && S.plusOn) ? calcBenefit(S.plus, PLUS_DATA) : {total:0, rows:[]};
+
+  // 실제 총 혜택
+  const baseBenefit  = isMixedPlus ? merged.total : rb.total;
+  const plusBenefit  = isMixedPlus ? 0 : rp.total; // 혼합형+혜택플러스는 merged에 포함됨
+  const totalBenefit = isMixedPlus ? merged.total : rb.total + rp.total;
+
+  const baseFeeM  = Math.round(12000/12);
+  const plusFeeM  = Math.round(7900/12);
+  const totalFeeM = baseFeeM + (S.plusOn ? plusFeeM : 0);
+  const totalFeeA = 12000 + (S.plusOn ? 7900 : 0);
+
+  const baseRoi  = baseBenefit - baseFeeM;
+  const plusRoi  = S.plusOn && !isMixedPlus ? plusBenefit - plusFeeM : null;
+  const totalRoi = totalBenefit - totalFeeM;
+
+  // 기본서비스 카드
+  document.getElementById('res-base').textContent = baseBenefit.toLocaleString()+'원';
+  const brEl=document.getElementById('res-base-roi');
+  brEl.textContent=(baseRoi>=0?'+':'')+baseRoi.toLocaleString()+'원';
+  brEl.className='rc-net'+(baseRoi<0?' neg':'');
+
+  // 혜택플러스 카드
+  const pc=document.getElementById('plus-card'); pc.classList.toggle('active',S.plusOn);
+  const pe=document.getElementById('res-plus');
+  const prEl=document.getElementById('res-plus-roi');
+  const pfEl=document.getElementById('plus-fee-monthly');
+  if(S.plusOn){
+    if(isMixedPlus){
+      pe.textContent='한도 공유'; pe.className='rc-value plus-val';
+      pfEl.textContent='−'+plusFeeM.toLocaleString()+'원';
+      prEl.textContent='기본서비스에 포함'; prEl.className='rc-net inactive';
+    } else {
+      pe.textContent=plusBenefit.toLocaleString()+'원'; pe.className='rc-value plus-val';
+      pfEl.textContent='−'+plusFeeM.toLocaleString()+'원';
+      const pr=plusRoi||0;
+      prEl.textContent=(pr>=0?'+':'')+pr.toLocaleString()+'원';
+      prEl.className='rc-net plus-net'+(pr<0?' neg':'');
+    }
+  } else {
+    pe.textContent='비활성'; pe.className='rc-value inactive';
+    pfEl.textContent='-'; prEl.textContent='-'; prEl.className='rc-net inactive';
+  }
+
+  // 합계 카드
+  document.getElementById('total-fee-label').textContent='연회비 '+totalFeeA.toLocaleString()+'원';
+  document.getElementById('res-total').textContent=totalBenefit.toLocaleString()+'원';
+  document.getElementById('total-fee-monthly').textContent='−'+totalFeeM.toLocaleString()+'원';
+  const roiEl=document.getElementById('res-roi');
+  roiEl.textContent=(totalRoi>=0?'+':'')+totalRoi.toLocaleString()+'원';
+  roiEl.className='rc-net total-net'+(totalRoi<0?' neg':'');
+
+  // 결과 상세
+  const det=document.getElementById('result-detail');
+  if(isMixedPlus && merged){
+    // 혼합형/특화형+혜택플러스: 합산 표시
+    const mRows=merged.rows.filter(r=>r.benefit>0).map(r=>{
+      let pctTxt='';
+      if(r.basePct>0&&r.plusPct>0) pctTxt=`<span style="color:var(--accent1)">${r.basePct.toFixed(1)}%</span>+<span style="color:var(--accent4)">${r.plusPct.toFixed(1)}%</span>=<span style="color:var(--good)">${r.totalPct.toFixed(1)}%</span>`;
+      else if(r.basePct>0) pctTxt=`<span style="color:var(--accent1)">${r.basePct.toFixed(1)}%</span>`;
+      else pctTxt=`<span style="color:var(--accent4)">${r.plusPct.toFixed(1)}%</span>`;
+      return `<div class="result-row"><span class="rname">${r.name} ${pctTxt}</span><span class="rval good">${r.benefit.toLocaleString()}원</span></div>`;
+    }).join('');
+    det.innerHTML=mRows
+      ?`<div class="result-col-title">기본+혜택플러스 합산 (공유한도 적용)</div><div style="grid-column:1/-1">${mRows}</div>`
+      :'<div style="color:var(--text3);font-size:11px;text-align:center;padding:10px 0;grid-column:1/-1">혜택 영역을 선택해주세요</div>';
+  } else {
+    const bRows=rb.rows.map(r=>`<div class="result-row"><span class="rname">${r.name}${r.pct?` <span style="color:var(--accent1)">${r.pct.toFixed(1)}%</span>`:''}</span><span class="rval ${r.benefit>0?'good':''}">${r.benefit!=null?r.benefit.toLocaleString()+'원':'무이자할부'}</span></div>`).join('');
+    const pRows=rp.rows.map(r=>`<div class="result-row"><span class="rname">${r.name}${r.pct?` <span style="color:var(--accent4)">${r.pct.toFixed(1)}%</span>`:''}</span><span class="rval plus-val">${r.benefit!=null?r.benefit.toLocaleString()+'원':'무이자할부'}</span></div>`).join('');
+    det.innerHTML=(bRows?`<div class="result-col-title">기본서비스</div><div>${bRows}</div>`:'')+
+      (S.plusOn&&pRows?`<div class="result-col-title plus-ct">혜택플러스 (별도 한도)</div><div>${pRows}</div>`:'');
+    if(!bRows&&!pRows) det.innerHTML='<div style="color:var(--text3);font-size:11px;text-align:center;padding:10px 0;grid-column:1/-1">혜택 영역을 선택해주세요</div>';
+  }
+}
+
+function updateMsgs(){
+  const ub=calcCr(S.base,baseData());const up=calcCr(S.plus,PLUS_DATA);
+  showMsg('msg-base',ub,'기본서비스');showMsg('msg-plus',up,'혜택플러스',!S.plusOn);
+  const note=document.getElementById('msg-note');note.style.display='block';
+  note.innerHTML=['• 할인/적립 받은 금액은 전월실적에서 제외됩니다 (국내외가맹점 0.8%↓·간편결제 1.2%↓는 실적 포함).',S.type!=='free'?'• 혼합형/특화형은 전월 실적 40만원 이상이 필요합니다.':'• 범용형 통합한도는 5만원/월 (국내외가맹점·간편결제 제외).',S.plusOn?'• 혜택플러스는 전월 실적 40만원 이상 조건.':'','• 본 계산기는 상품설명서(2025.06) 기준 참고용입니다.'].filter(Boolean).join('<br>');
+}
+function showMsg(id,used,label,hide=false){const el=document.getElementById(id);if(hide){el.style.display='none';return;}el.style.display='block';if(used>100){el.className='msg-box msg-warn';el.textContent=`⚠️ ${label} 원더크레딧 ${used-100}코인 초과.`;}else if(used<100){el.className='msg-box msg-warn';el.textContent=`💡 ${label} 원더크레딧 ${100-used}코인 남음. 정확히 100이 되어야 설정 완료됩니다.`;}else{el.className='msg-box msg-ok';el.textContent=`✅ ${label} 원더크레딧 100코인 배분 완료.`;}}
+
+
+initSel();renderAll();
+</script>
+</body>
+</html>
