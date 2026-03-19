@@ -96,7 +96,29 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .pct-max{font-size:9px;color:var(--text3);margin-left:auto}
 .benefit-limit{font-size:9px;color:var(--text3);margin-top:3px}
 .benefit-limit.highlight{color:var(--good)}
-/* SPEND TABLE */
+/* TABS */
+.tab-bar{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);max-width:960px;margin:0 auto}
+.tab-btn{flex:1;padding:12px;font-size:12px;font-weight:600;background:transparent;border:none;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;border-bottom:2px solid transparent}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--accent3);border-bottom-color:var(--accent3)}
+.auto-run-btn{width:100%;background:linear-gradient(135deg,rgba(123,94,167,0.15),rgba(224,92,138,0.1));border:1px solid rgba(123,94,167,0.4);border-radius:8px;color:var(--text);padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans KR',sans-serif}
+.auto-run-btn:hover{background:linear-gradient(135deg,rgba(123,94,167,0.25),rgba(224,92,138,0.18));border-color:var(--accent1)}
+/* AUTO RESULT */
+.auto-scenario{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:10px}
+.auto-scenario.best{border-color:var(--good);background:rgba(76,175,136,0.05)}
+.auto-sc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.auto-sc-title{font-size:13px;font-weight:700;color:var(--text)}
+.auto-sc-net{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--good)}
+.auto-sc-net.neg{color:var(--warn)}
+.auto-sc-meta{display:flex;gap:12px;font-size:10px;color:var(--text3);margin-bottom:10px;flex-wrap:wrap}
+.auto-sc-rows{border-top:1px solid var(--border);padding-top:8px}
+.auto-sc-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(42,42,53,0.4);font-size:11px}
+.auto-sc-row:last-child{border-bottom:none}
+.auto-sc-name{color:var(--text2)}
+.auto-sc-val{font-family:'Space Mono',monospace;color:var(--good)}
+.auto-sc-val.plus-v{color:var(--accent4)}
+.auto-apply-btn{font-size:11px;background:rgba(123,94,167,0.15);border:1px solid var(--accent1);border-radius:5px;color:#c9a0f0;padding:4px 10px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.15s}
+.auto-apply-btn:hover{background:rgba(123,94,167,0.3)}
 .spend-table{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
 .spend-table-header{display:grid;grid-template-columns:1fr 150px 90px;gap:0;background:var(--surface2);padding:7px 12px;font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
 .spend-row{display:grid;grid-template-columns:1fr 150px 90px;align-items:center;gap:0;padding:6px 12px;border-top:1px solid var(--border);transition:background 0.15s}
@@ -111,6 +133,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .spend-benefit{font-family:'Space Mono',monospace;font-size:11px;color:var(--good);text-align:right}
 .spend-benefit.zero{color:var(--text3)}.spend-benefit.plus-b{color:var(--accent4)}
 .spend-row.zero-row{opacity:0.6}
+.perfonly-label{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text3);cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:6px}
+.perfonly-label input{width:12px;height:12px;cursor:pointer;accent-color:var(--accent4)}
+.perfonly-label:hover{color:var(--accent4)}
 /* RESULT */
 .result-split{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 @media(max-width:560px){.result-split{grid-template-columns:1fr}}
@@ -145,11 +170,17 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 <body>
 <div class="header">
   <div class="header-inner">
-    <h1>원더카드 2.0 혜택 설계 계산기</h1>
-    <p>상품설명서(2025.06) 기준 · ± 버튼으로 할인율 조절 · hover 시 가맹점 확인</p>
+    <h1>원더카드 2.0 계산기</h1>
+    <p>상품설명서(2025.06) 기준</p>
   </div>
 </div>
-<div class="main">
+<!-- 탭 -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('manual')" id="tab-manual">✏️ 직접 설계</button>
+  <button class="tab-btn" onclick="switchTab('auto')" id="tab-auto">🎯 소비액 기반 추천</button>
+</div>
+<!-- 탭 1: 직접 설계 -->
+<div id="panel-manual" class="main">
   <div class="section">
     <div class="section-title">STEP 1 &nbsp;상품 유형</div>
     <div class="type-grid">
@@ -233,6 +264,30 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     <div id="msg-plus" class="msg-box msg-warn" style="display:none"></div>
     <div id="msg-note" class="msg-box msg-note" style="display:none"></div>
   </div>
+</div><!-- /panel-manual -->
+
+<!-- 탭 2: 소비액 기반 추천 -->
+<div id="panel-auto" class="main" style="display:none">
+  <div class="section">
+    <div class="section-title">STEP A &nbsp;사용처별 월 소비액 입력 <span style="font-size:9px;color:var(--text3);margin-left:4px;font-weight:400;letter-spacing:0">미입력 항목은 0원으로 계산됩니다</span></div>
+    <div class="spend-table">
+      <div class="spend-table-header"><span>사용처</span><span style="text-align:right">월 소비액</span><span style="text-align:right;font-size:9px">실적용</span></div>
+      <div id="auto-spend-rows"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">STEP B &nbsp;달성 가능한 실적 구간 선택</div>
+    <div class="perf-grid">
+      <div class="perf-card active" onclick="setAutoPerf('none')" id="aperf-none"><div class="perf-name">실적 없음</div><div class="perf-sub">범용형만 고려</div></div>
+      <div class="perf-card" onclick="setAutoPerf('low')" id="aperf-low"><div class="perf-name">40~80만원</div><div class="perf-sub">혼합형·특화형만<br><span style="font-size:9px;color:var(--text3)">범용형 제외</span></div></div>
+      <div class="perf-card" onclick="setAutoPerf('mid')" id="aperf-mid"><div class="perf-name">80~120만원</div><div class="perf-sub">혼합형·특화형만<br><span style="font-size:9px;color:var(--text3)">범용형 제외</span></div></div>
+      <div class="perf-card" onclick="setAutoPerf('high')" id="aperf-high"><div class="perf-name">120만원 이상</div><div class="perf-sub">혼합형·특화형만<br><span style="font-size:9px;color:var(--text3)">범용형 제외</span></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <button class="auto-run-btn" onclick="runAutoRec()">✨ 최적 조합 추천받기</button>
+    <div id="auto-result"></div>
+  </div>
 </div>
 <script>
 // ===== STORES =====
@@ -252,14 +307,8 @@ const PLUS_DATA=[{id:'p_easy',name:'간편결제',cr:20,unit:1,min:0,max:5,l40:4
 
 // ===== DEFAULT SPEND =====
 // 모든 영역 기본 소비액 = 0 (사용자가 직접 입력)
-const DEFAULT_SPEND={};
-FREE_DATA.forEach(d=>{if(!d.noRate)DEFAULT_SPEND[d.id]=0;});
-
-function getSpend(id){const k=getBaseId(id);return spendMap[k]!==undefined?spendMap[k]:0;}
-
 // ===== STATE =====
 let S={type:'free',perf:'low',plusOn:false,base:{},plus:{}};
-// spendMap persists across type/perf changes — keyed by base id
 let spendMap={};
 
 function baseData(){
@@ -268,7 +317,7 @@ function baseData(){
   return MIXED_DATA;
 }
 function getBaseId(id){return id.startsWith('p_')?id.slice(2):id;}
-function getSpend(id){const k=getBaseId(id);return spendMap[k]!==undefined?spendMap[k]:(DEFAULT_SPEND[k]||50000);}
+function getSpend(id){const k=getBaseId(id);return spendMap[k]!==undefined?spendMap[k]:0;}
 
 
 function initSel(){
@@ -416,12 +465,12 @@ function setBar(nId,bId,used,kind){
 function renderSpendTable(){
   const container=document.getElementById('spend-rows');
 
-  // baseId 기준으로 병합 — pct가 0이어도 선택된 항목은 포함
+  // baseId 기준으로 병합 — auto 포함, pct 0이어도 선택된 항목 포함
   const merged={};
 
   baseData().forEach(d=>{
     const s=S.base[d.id];
-    if(!s||!s.sel||d.noRate)return; // pct 0도 포함
+    if(!s||!s.sel||d.noRate)return;
     const k=d.id;
     if(!merged[k])merged[k]={baseId:k,name:d.name,basePct:0,plusPct:0};
     merged[k].basePct=s.pct||0;
@@ -688,6 +737,358 @@ function updateMsgs(){
 }
 function showMsg(id,used,label,hide=false){const el=document.getElementById(id);if(hide){el.style.display='none';return;}el.style.display='block';if(used>100){el.className='msg-box msg-warn';el.textContent=`⚠️ ${label} 원더크레딧 ${used-100}코인 초과.`;}else if(used<100){el.className='msg-box msg-warn';el.textContent=`💡 ${label} 원더크레딧 ${100-used}코인 남음. 정확히 100이 되어야 설정 완료됩니다.`;}else{el.className='msg-box msg-ok';el.textContent=`✅ ${label} 원더크레딧 100코인 배분 완료.`;}}
 
+// ===== TAB =====
+function switchTab(tab){
+  document.getElementById('panel-manual').style.display=tab==='manual'?'block':'none';
+  document.getElementById('panel-auto').style.display=tab==='auto'?'block':'none';
+  document.getElementById('tab-manual').classList.toggle('active',tab==='manual');
+  document.getElementById('tab-auto').classList.toggle('active',tab==='auto');
+  if(tab==='auto') renderAutoSpend();
+}
+
+// ===== 탭2: 소비액 입력 =====
+let autoPerf='none';
+function setAutoPerf(p){
+  autoPerf=p;
+  ['none','low','mid','high'].forEach(x=>document.getElementById('aperf-'+x).classList.toggle('active',x===p));
+}
+// perfOnly: 실적용으로 체크된 항목 — 혼합형/특화형에서 서비스 선택 제외
+const perfOnlyMap={};
+
+function renderAutoSpend(){
+  const areas=FREE_DATA.filter(d=>!d.noRate);
+  document.getElementById('auto-spend-rows').innerHTML=areas.map(d=>{
+    const spend=spendMap[d.id]||0;
+    const isAuto=d.auto;
+    const isPerfOnly=!!perfOnlyMap[d.id];
+    return `<div class="spend-row">
+      <span class="spend-name" style="${isAuto?'color:var(--accent3)':''}">
+        ${d.name}${isAuto?'<span style="font-size:9px;margin-left:3px;color:var(--accent3)">필수</span>':''}
+      </span>
+      <span class="spend-input-wrap">
+        <input class="spend-input" type="number" min="0" step="1000" value="${spend}"
+          data-baseid="${d.id}" oninput="onAutoSpend(this)">
+        <span class="spend-unit">원</span>
+      </span>
+      <label class="perfonly-label" title="체크 시 혼합형·특화형에서 이 항목을 서비스 선택에서 제외합니다">
+        <input type="checkbox" ${isPerfOnly?'checked':''} onchange="togglePerfOnly('${d.id}',this.checked)">
+        <span>실적용</span>
+      </label>
+    </div>`;
+  }).join('');
+}
+function onAutoSpend(el){spendMap[el.dataset.baseid]=parseInt(el.value)||0;}
+function togglePerfOnly(id,checked){
+  if(checked) perfOnlyMap[id]=true; else delete perfOnlyMap[id];
+}
+
+// ===== 추천 알고리즘 =====
+function optimizeScenario(dataset,perf,withPlus){
+  const lk={low:'l40',mid:'l80',high:'l120'}[perf]||'l40';
+  const isFree=dataset===FREE_DATA;
+  function getLimD(d){if(d.lim==='ul')return null;if(d.lim==='5m')return 50000;return d[lk]||null;}
+  function bestItems(ds,isPlus){
+    const best={};
+    ds.forEach(d=>{
+      if(d.noRate||d.auto)return;
+      const baseId=isPlus?d.id.slice(2):d.id;
+      // 실적용 체크된 항목은 혼합형/특화형에서 제외
+      if(!isFree && perfOnlyMap[baseId]) return;
+      const spend=spendMap[baseId]||0; if(!spend)return;
+      const maxSteps=Math.round(d.max/d.unit); if(!maxSteps)return;
+      const lim=getLimD(d); let bestC=null;
+      for(let st=1;st<=maxSteps;st++){
+        const pct=Math.round(st*d.unit*10)/10;
+        const raw=Math.floor(spend*pct/100);
+        const benefit=lim===null?raw:Math.min(raw,lim);
+        const cu=st*d.cr; const eff=benefit/cu;
+        if(!bestC||eff>bestC.eff||(eff===bestC.eff&&benefit>bestC.benefit))
+          bestC={id:d.id,baseId,name:d.name,pct,benefit,creditUsed:cu,eff,lim,d,maxSteps};
+      }
+      if(bestC)best[d.id]=bestC;
+    });
+    return Object.values(best).sort((a,b)=>b.eff-a.eff);
+  }
+
+  // 크레딧을 최대한 소진: 남은 크레딧으로 기존 선택 영역의 할인율을 1스텝씩 업그레이드
+  function upgradeChosen(chosenArr, isPlus, remainBudget, baseUsedMap){
+    let b=remainBudget;
+    let changed=true;
+    while(changed && b>0){
+      changed=false;
+      let best=null;
+      for(const c of chosenArr){
+        const d=c.d; if(!d||d.noRate) continue;
+        const curSteps=Math.round(c.pct/d.unit);
+        const maxSteps=Math.round(d.max/d.unit);
+        if(curSteps>=maxSteps) continue;
+        if(d.cr>b) continue; // 1스텝 추가 크레딧
+        const nextPct=Math.round((curSteps+1)*d.unit*10)/10;
+        const baseId=isPlus?c.baseId:c.id;
+        const spend=spendMap[baseId]||0;
+        if(!spend) continue;
+        // 한도 계산
+        let lim=c.lim;
+        if(!isFree && isPlus && baseUsedMap){
+          const baseD=dataset.find(x=>x.id===c.baseId);
+          const sl=baseD?getLimD(baseD):null;
+          if(sl!==null) lim=Math.max(0, sl-(baseUsedMap[c.baseId]||0));
+        }
+        const newBenefit=lim===null?Math.floor(spend*nextPct/100):Math.min(Math.floor(spend*nextPct/100),lim);
+        const addBenefit=newBenefit-c.benefit;
+        if(addBenefit<=0) continue;
+        const eff=addBenefit/d.cr;
+        if(!best||eff>best.eff) best={c,nextPct,newBenefit,eff};
+      }
+      if(best){
+        best.c.pct=best.nextPct;
+        best.c.benefit=best.newBenefit;
+        best.c.creditUsed+=best.c.d.cr;
+        b-=best.c.d.cr;
+        changed=true;
+      }
+    }
+    return b;
+  }
+
+  let budget=100;
+  // auto 항목: 최솟값으로 chosen에 추가
+  const autoChosenItems=[];
+  dataset.filter(d=>d.auto&&!d.noRate).forEach(d=>{
+    const minSteps=Math.round(d.min/d.unit);
+    const cr=minSteps*d.cr;
+    budget-=cr;
+    const spend=spendMap[d.id]||0;
+    const lim=getLimD(d);
+    const benefit=spend>0?(lim===null?Math.floor(spend*d.min/100):Math.min(Math.floor(spend*d.min/100),lim)):0;
+    autoChosenItems.push({id:d.id,baseId:d.id,name:d.name,pct:d.min,benefit,creditUsed:cr,lim,d,isPlus:false});
+  });
+
+  const chosen=[...autoChosenItems]; let limAcc=0;
+  for(const c of bestItems(dataset,false)){
+    if(budget<=0)break; if(c.creditUsed>budget)continue;
+    if(isFree&&c.lim===50000){
+      const rem=50000-limAcc; if(rem<=0)continue;
+      const actual=Math.min(c.benefit,rem); if(!actual)continue;
+      limAcc+=actual; chosen.push({...c,benefit:actual,isPlus:false});
+    } else chosen.push({...c,isPlus:false});
+    budget-=c.creditUsed;
+  }
+
+  // 2라운드: 남은 크레딧으로 ① 기존 선택 업그레이드 ② 새 항목 추가 반복
+  if(budget>0){
+    let changed=true;
+    while(changed && budget>0){
+      changed=false;
+      let best=null;
+
+      // 기존 chosen 업그레이드 후보
+      for(const c of chosen){
+        const d=c.d; if(!d||d.noRate) continue;
+        const curSteps=Math.round(c.pct/d.unit);
+        const maxSteps=Math.round(d.max/d.unit);
+        if(curSteps>=maxSteps||d.cr>budget) continue;
+        const nextPct=Math.round((curSteps+1)*d.unit*10)/10;
+        const spend=spendMap[c.baseId]||0; if(!spend) continue; // baseId로 소비액 조회
+        const lim=getLimD(d); // 항상 원본 d에서 한도 재계산
+        const newBen=lim===null?Math.floor(spend*nextPct/100):Math.min(Math.floor(spend*nextPct/100),lim);
+        const add=newBen-c.benefit; if(add<=0) continue;
+        if(!best||add/d.cr>best.eff) best={type:'upgrade',c,nextPct,newBen,eff:add/d.cr};
+      }
+
+      // 아직 선택 안 된 항목 추가 후보 — 잔여 크레딧 기준 최적 steps 재계산
+      const chosenIds=new Set(chosen.map(c=>c.id));
+      dataset.forEach(d=>{
+        if(d.noRate||d.auto||chosenIds.has(d.id)) return;
+        if(!isFree && perfOnlyMap[d.id]) return; // 실적용 제외
+        const spend=spendMap[d.id]||0; if(!spend) return;
+        const lim=getLimD(d);
+        const maxSteps=Math.round(d.max/d.unit);
+        let bestC=null;
+        for(let st=1;st<=maxSteps;st++){
+          const cu=st*d.cr; if(cu>budget) break;
+          const pct=Math.round(st*d.unit*10)/10;
+          const raw=Math.floor(spend*pct/100);
+          let benefit;
+          if(isFree&&lim===50000){
+            const rem=50000-limAcc; if(rem<=0) break;
+            benefit=Math.min(raw,rem);
+          } else {
+            benefit=lim===null?raw:Math.min(raw,lim);
+          }
+          if(benefit<=0) continue;
+          const eff=benefit/cu;
+          if(!bestC||eff>bestC.eff||(eff===bestC.eff&&benefit>bestC.benefit))
+            bestC={id:d.id,baseId:d.id,name:d.name,pct,benefit,creditUsed:cu,eff,lim,d,isPlus:false};
+        }
+        if(!bestC||bestC.benefit<=0) return;
+        if(!best||bestC.eff>best.eff) best={type:'new',c:bestC,actual:bestC.benefit,eff:bestC.eff};
+      });
+
+      if(best){
+        if(best.type==='upgrade'){
+          best.c.pct=best.nextPct; best.c.benefit=best.newBen;
+          best.c.creditUsed+=best.c.d.cr; budget-=best.c.d.cr;
+        } else {
+          if(isFree&&best.c.lim===50000) limAcc+=best.actual;
+          chosen.push({...best.c,benefit:best.actual,isPlus:false});
+          budget-=best.c.creditUsed;
+        }
+        changed=true;
+      }
+    }
+  }
+
+  let plusChosen=[],plusBenefit=0;
+  if(withPlus){
+    let pb=100; const baseUsedMap={};
+    chosen.forEach(c=>{baseUsedMap[c.id]=c.benefit;});
+    for(const c of bestItems(PLUS_DATA,true)){
+      if(pb<=0)break; if(c.creditUsed>pb)continue;
+      if(isFree){plusChosen.push({...c,isPlus:true});pb-=c.creditUsed;}
+      else{
+        const baseD=dataset.find(x=>x.id===c.baseId);
+        const sharedLim=baseD?getLimD(baseD):null;
+        const rem=sharedLim===null?Infinity:Math.max(0,sharedLim-(baseUsedMap[c.baseId]||0));
+        if(rem<=0)continue;
+        const actual=Math.min(Math.floor((spendMap[c.baseId]||0)*c.pct/100),rem);
+        if(!actual)continue;
+        plusChosen.push({...c,benefit:actual,isPlus:true});pb-=c.creditUsed;
+      }
+    }
+    // 2라운드: 혜택플러스 남은 크레딧 소진
+    if(pb>0){
+      let changed2=true;
+      while(changed2 && pb>0){
+        changed2=false;
+        let best2=null;
+        const plusIds=new Set(plusChosen.map(c=>c.id));
+
+        // 기존 업그레이드
+        for(const c of plusChosen){
+          const d=c.d; if(!d||d.noRate) continue;
+          const curSteps=Math.round(c.pct/d.unit);
+          const maxSteps=Math.round(d.max/d.unit);
+          if(curSteps>=maxSteps||d.cr>pb) continue;
+          const nextPct=Math.round((curSteps+1)*d.unit*10)/10;
+          const spend=spendMap[c.baseId]||0; if(!spend) continue; // baseId로 조회
+          let lim=isFree?getLimD(d):(()=>{
+            const baseD=dataset.find(x=>x.id===c.baseId);
+            const sl=baseD?getLimD(baseD):null;
+            return sl===null?null:Math.max(0,sl-(baseUsedMap[c.baseId]||0));
+          })();
+          const newBen=lim===null?Math.floor(spend*nextPct/100):Math.min(Math.floor(spend*nextPct/100),lim);
+          const add=newBen-c.benefit; if(add<=0) continue;
+          if(!best2||add/d.cr>best2.eff) best2={type:'upgrade',c,nextPct,newBen,eff:add/d.cr};
+        }
+
+        // 새 항목 추가 — 잔여 한도와 잔여 크레딧 기준으로 최적 steps 재계산
+        PLUS_DATA.forEach(pd=>{
+          if(pd.noRate||plusIds.has(pd.id)) return;
+          const spend=spendMap[pd.baseId||pd.id.slice(2)]||0; if(!spend) return;
+          const baseId=pd.id.slice(2);
+          if(!isFree && perfOnlyMap[baseId]) return; // 실적용 제외
+          // 공유 한도 계산
+          let lim;
+          if(isFree){
+            lim=getLimD(pd);
+          } else {
+            const baseD=dataset.find(x=>x.id===baseId);
+            const sl=baseD?getLimD(baseD):null;
+            lim=sl===null?null:Math.max(0,sl-(baseUsedMap[baseId]||0));
+          }
+          if(lim!==null&&lim<=0) return;
+          // 잔여 크레딧 내에서 최적 steps 탐색
+          const maxSteps=Math.round(pd.max/pd.unit);
+          let bestC2=null;
+          for(let st=1;st<=maxSteps;st++){
+            const cu=st*pd.cr; if(cu>pb) break;
+            const pct=Math.round(st*pd.unit*10)/10;
+            const raw=Math.floor(spend*pct/100);
+            const benefit=lim===null?raw:Math.min(raw,lim);
+            const eff=benefit/cu;
+            if(!bestC2||eff>bestC2.eff||(eff===bestC2.eff&&benefit>bestC2.benefit))
+              bestC2={id:pd.id,baseId,name:pd.name,pct,benefit,creditUsed:cu,eff,lim,d:pd,isPlus:true};
+          }
+          if(!bestC2||bestC2.benefit<=0) return;
+          if(!best2||bestC2.eff>best2.eff) best2={type:'new',c:bestC2,actual:bestC2.benefit,eff:bestC2.eff};
+        });
+
+        if(best2){
+          if(best2.type==='upgrade'){
+            best2.c.pct=best2.nextPct; best2.c.benefit=best2.newBen;
+            best2.c.creditUsed+=best2.c.d.cr; pb-=best2.c.d.cr;
+          } else {
+            plusChosen.push({...best2.c,benefit:best2.actual,isPlus:true});
+            pb-=best2.c.creditUsed;
+          }
+          changed2=true;
+        }
+      }
+    }
+    plusBenefit=plusChosen.reduce((s,c)=>s+c.benefit,0);
+  }
+  const baseBenefit=chosen.reduce((s,c)=>s+c.benefit,0);
+  const totalBenefit=baseBenefit+plusBenefit;
+  const annualFee=12000+(withPlus?7900:0);
+  const netMonthly=totalBenefit-Math.round(annualFee/12);
+  return{chosen,plusChosen,baseBenefit,plusBenefit,totalBenefit,annualFee,netMonthly};
+}
+
+function runAutoRec(){
+  if(!Object.values(spendMap).some(v=>v>0)){
+    document.getElementById('auto-result').innerHTML='<div style="color:var(--warn);font-size:12px;margin-top:10px;padding:10px;background:rgba(240,160,80,0.08);border-radius:8px;border:1px solid rgba(240,160,80,0.25)">⚠️ STEP A에서 소비액을 하나 이상 입력해주세요.</div>';
+    return;
+  }
+  const perfOpts=autoPerf==='none'?['none']:autoPerf==='low'?['low']:autoPerf==='mid'?['low','mid']:['low','mid','high'];
+  const scenarios=[];
+  perfOpts.forEach(p=>{
+    if(p==='none'){
+      scenarios.push({label:'범용형',sub:'무실적',dataset:FREE_DATA,perf:'low',plus:false});
+    } else {
+      const sub={low:'실적 40~80만',mid:'실적 80~120만',high:'실적 120만↑'}[p];
+      scenarios.push({label:'혼합형',sub,dataset:MIXED_DATA,perf:p,plus:false});
+      scenarios.push({label:'혼합형 + 혜택플러스',sub,dataset:MIXED_DATA,perf:p,plus:true});
+      scenarios.push({label:'특화형',sub,dataset:SPECIAL_DATA,perf:p,plus:false});
+      scenarios.push({label:'특화형 + 혜택플러스',sub,dataset:SPECIAL_DATA,perf:p,plus:true});
+    }
+  });
+  const results=scenarios.map(sc=>({...sc,...optimizeScenario(sc.dataset,sc.perf,sc.plus)})).sort((a,b)=>b.netMonthly-a.netMonthly);
+  window._autoResults=results;
+  document.getElementById('auto-result').innerHTML=
+    `<div style="font-size:10px;color:var(--text3);margin-top:10px;margin-bottom:4px">총 ${results.length}가지 시나리오 · 순혜택(월 혜택 − 월 연회비) 기준 정렬</div>`
+    +results.map((r,i)=>{
+      const isBest=i===0;
+      const allRows=[...r.chosen,...r.plusChosen].filter(c=>c.benefit>0);
+      const rowsHtml=allRows.map(c=>`<div class="auto-sc-row"><span class="auto-sc-name">${c.name} <span style="font-family:monospace;font-size:9px;color:${c.isPlus?'var(--accent4)':'var(--text3)'}">${c.pct.toFixed(1)}%${c.isPlus?' [혜플]':''}</span></span><span class="auto-sc-val${c.isPlus?' plus-v':''}">+${c.benefit.toLocaleString()}원</span></div>`).join('');
+      return `<div class="auto-scenario${isBest?' best':''}">
+        <div class="auto-sc-header"><span class="auto-sc-title">${isBest?'🏆 ':''}<b>${r.label}</b> <span style="font-size:10px;color:var(--text3);font-weight:400">${r.sub}</span></span><span class="auto-sc-net${r.netMonthly<0?' neg':''}">${r.netMonthly>=0?'+':''}${r.netMonthly.toLocaleString()}원/월</span></div>
+        <div class="auto-sc-meta"><span>월 혜택 <b style="color:var(--text)">${r.totalBenefit.toLocaleString()}원</b></span><span>연회비 <b style="color:var(--text)">${r.annualFee.toLocaleString()}원</b></span>${r.plus?`<span style="color:var(--accent4)">혜택플러스 ${r.plusBenefit.toLocaleString()}원 포함</span>`:''}</div>
+        <div class="auto-sc-rows">${rowsHtml||'<div style="color:var(--text3);font-size:11px">소비액이 있는 영역이 없습니다</div>'}</div>
+        <button class="auto-apply-btn" style="margin-top:10px;width:100%" onclick="applyAutoRec(${i})">이 조합을 직접 설계 탭에 적용하기</button>
+      </div>`;
+    }).join('')
+    +`<div style="font-size:10px;color:var(--text3);margin-top:10px">※ 실적형은 해당 실적 달성 시 기준입니다.</div>`;
+}
+
+window._autoResults=null;
+function applyAutoRec(idx){
+  if(!window._autoResults)return;
+  const r=window._autoResults[idx];
+  const newType=r.dataset===FREE_DATA?'free':r.dataset===SPECIAL_DATA?'special':'mixed';
+  S.type=newType;
+  ['free','mixed','special'].forEach(x=>document.getElementById('type-'+x).classList.toggle('active',x===newType));
+  document.getElementById('perf-section').style.display=newType==='free'?'none':'block';
+  S.perf=r.perf==='none'?'low':r.perf;
+  ['low','mid','high'].forEach(x=>document.getElementById('perf-'+x).classList.toggle('active',x===S.perf));
+  if(r.plus!==S.plusOn)togglePlus();
+  initSel();
+  r.chosen.forEach(c=>{const s=S.base[c.id];if(s){s.sel=true;s.pct=c.pct;}});
+  if(r.plus)r.plusChosen.forEach(c=>{const s=S.plus[c.id];if(s){s.sel=true;s.pct=c.pct;}});
+  switchTab('manual');
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 initSel();renderAll();
 </script>
